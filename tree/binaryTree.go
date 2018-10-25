@@ -25,29 +25,24 @@ func main() {
 	node5 := newNode(4)
 	node6 := newNode(6)
 	node7 := newNode(9)
+	t := tree{}
 
-	node1.addChild(&node2, &node3)
-	node2.addChild(&node4, &node5)
-	node3.addChild(&node6, &node7)
+	t.insertion(&node1)
+	t.insertion(&node2)
+	t.insertion(&node3)
+	t.insertion(&node4)
+	t.insertion(&node5)
+	t.insertion(&node6)
+	t.insertion(&node7)
 
-	t := tree{
-		root: &node1,
-	}
-
+	t.deleteNode(3)
+	t.deleteNode(4)
 	t.root.traversal()
-	sn, err := t.root.search(3)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	fmt.Println(sn.successor())
 
 }
 
 func (n node) traversal() {
-
+	// The inorder traversal of BST
 	if n.left != nil {
 		n.left.traversal()
 	}
@@ -68,17 +63,6 @@ func newNode(k int) node {
 	}
 
 	return newNode
-}
-
-func (n *node) addChild(leftChild *node, rightChild *node) {
-	n.left = leftChild
-	n.right = rightChild
-	if leftChild != nil {
-		leftChild.parent = n
-	}
-	if rightChild != nil {
-		rightChild.parent = n
-	}
 }
 
 func (n *node) search(key int) (*node, error) {
@@ -129,10 +113,102 @@ func (n *node) successor() *node {
 	return y
 }
 
+// Find minimum
 func (n *node) leftmost() *node {
 	for n.left != nil {
 		n = n.left
 	}
-
 	return n
+}
+
+// Find Maximum
+func (n *node) rightmost() *node {
+	if n.right != nil {
+		n = n.right.rightmost()
+	}
+	return n
+}
+
+func (n *node) predecessor() *node {
+	if n.left != nil {
+		return n.left.rightmost()
+	}
+
+	y := n.parent
+	for y != nil && n == y.left {
+		n = y
+		y = n.parent
+	}
+	return y
+}
+
+func (t *tree) insertion(n *node) {
+	y := t.root
+	// Decide the parent
+	if y == nil {
+		t.root = n
+		return
+	}
+	x := y
+
+	for y != nil {
+		x = y
+		if n.key < x.key {
+			y = y.left
+		} else if n.key > x.key {
+			y = y.right
+		}
+	}
+	n.parent = x
+
+	// Decide n is to left or right child
+	if n.key > x.key {
+		x.right = n
+	} else {
+		x.left = n
+	}
+}
+
+func (t *tree) deleteNode(k int) {
+	n, err := t.root.search(k)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if n.left == nil {
+		t.transplant(n, n.right)
+	} else if n.right == nil {
+		t.transplant(n, n.left)
+	} else {
+		y := n.right.leftmost()
+
+		if y.parent != n {
+			t.transplant(n, y)
+			y.right = n.right
+			y.right.parent = y
+		}
+
+		t.transplant(n, y)
+		y.left = n.left
+		y.left.parent = y
+
+	}
+
+}
+
+func (t *tree) transplant(old *node, new *node) {
+	if old.parent == nil {
+		t.root = new
+		return
+	}
+
+	if old.parent.left == old {
+		old.parent.left = new
+	} else {
+		old.parent.right = new
+	}
+
+	new.parent = old.parent
 }
